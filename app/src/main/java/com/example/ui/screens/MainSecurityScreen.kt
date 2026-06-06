@@ -1089,7 +1089,24 @@ fun HistoryTab(
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 items(scanHistory, key = { it.id }) { log ->
-                    val color = when (log.threatLevel) {
+                    val isLogTrusted = remember(log.packageName) {
+                        val lower = log.packageName.lowercase()
+                        val trustedKeywords = listOf(
+                            "google", "android", "microsoft", "chess", "physicswallah", "penpencil",
+                            "pwlive", "pw.live", "whatsapp", "facebook", "instagram", "spotify",
+                            "netflix", "amazon", "linkedin", "mozilla", "openai", "telegram",
+                            "slack", "zoom", "adobe", "duolingo", "jio", "hotstar", "sony", "zee5",
+                            "z5", "paytm", "phonepe", "flipkart", "myntra", "ubercab", "olacabs",
+                            "zomato", "swiggy", "truecaller", "airtel", "bookmyshow"
+                        )
+                        trustedKeywords.any { lower.contains(it) }
+                    }
+
+                    val finalThreatLevel = if (isLogTrusted) "VERIFIED" else log.threatLevel
+                    val finalRiskScore = if (isLogTrusted) 5 else log.riskScore
+
+                    val color = when (finalThreatLevel) {
+                        "VERIFIED" -> BentoAlertLow
                         "HIGH_RISK" -> BentoAlertHigh
                         "SUSPICIOUS" -> BentoAlertMedium
                         else -> BentoAlertLow
@@ -1128,7 +1145,7 @@ fun HistoryTab(
                                     fontWeight = FontWeight.Bold,
                                     color = BentoTextPrimary,
                                     maxLines = 1
-                                )
+                               )
                                 Text(
                                     log.packageName,
                                     fontSize = 11.sp,
@@ -1147,14 +1164,14 @@ fun HistoryTab(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = log.threatLevel.replace("_", " "),
+                                        text = finalThreatLevel.replace("_", " "),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = color
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Text(
-                                        text = "Risk: ${log.riskScore}%",
+                                        text = "Risk: $finalRiskScore%",
                                         fontSize = 11.sp,
                                         color = BentoTextPrimary,
                                         fontWeight = FontWeight.Medium
@@ -1376,26 +1393,15 @@ fun OverviewSubTab(
 ) {
     val isTrusted = remember(details.packageName) {
         val lower = details.packageName.lowercase()
-        lower.startsWith("com.google.") ||
-                lower.startsWith("com.android.") ||
-                lower.startsWith("com.microsoft.") ||
-                lower.startsWith("com.chess") ||
-                lower.contains("physicswallah") ||
-                lower.startsWith("com.pw") ||
-                lower.startsWith("com.whatsapp") ||
-                lower.startsWith("com.facebook") ||
-                lower.startsWith("com.instagram") ||
-                lower.startsWith("com.spotify") ||
-                lower.startsWith("com.netflix") ||
-                lower.startsWith("com.amazon.") ||
-                lower.startsWith("com.linkedin") ||
-                lower.startsWith("org.mozilla.") ||
-                lower.startsWith("com.openai") ||
-                lower.startsWith("org.telegram.messenger") ||
-                lower.startsWith("com.slack") ||
-                lower.startsWith("com.zoom") ||
-                lower.startsWith("com.adobe.") ||
-                lower.startsWith("com.duolingo")
+        val trustedKeywords = listOf(
+            "google", "android", "microsoft", "chess", "physicswallah", "penpencil",
+            "pwlive", "pw.live", "whatsapp", "facebook", "instagram", "spotify",
+            "netflix", "amazon", "linkedin", "mozilla", "openai", "telegram",
+            "slack", "zoom", "adobe", "duolingo", "jio", "hotstar", "sony", "zee5",
+            "z5", "paytm", "phonepe", "flipkart", "myntra", "ubercab", "olacabs",
+            "zomato", "swiggy", "truecaller", "airtel", "bookmyshow"
+        )
+        trustedKeywords.any { lower.contains(it) }
     }
 
     val levelLabel = when {

@@ -183,7 +183,8 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
     }
 
     fun forceScanSuccessState(details: ApkSecurityDetails, score: Int, level: String) {
-        _scanState.value = ScanState.ScanSuccess(details, score, level)
+        val (recalculatedScore, recalculatedLevel) = repository.calculateLocalRiskScore(details)
+        _scanState.value = ScanState.ScanSuccess(details, recalculatedScore, recalculatedLevel)
     }
 
     fun resetState() {

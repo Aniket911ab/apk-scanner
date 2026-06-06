@@ -255,26 +255,15 @@ class ScanRepository(private val scanLogDao: ScanLogDao) {
 
     fun isTrustedDeveloper(packageName: String): Boolean {
         val lower = packageName.lowercase()
-        return lower.startsWith("com.google.") ||
-                lower.startsWith("com.android.") ||
-                lower.startsWith("com.microsoft.") ||
-                lower.startsWith("com.chess") ||
-                lower.contains("physicswallah") ||
-                lower.startsWith("com.pw") ||
-                lower.startsWith("com.whatsapp") ||
-                lower.startsWith("com.facebook") ||
-                lower.startsWith("com.instagram") ||
-                lower.startsWith("com.spotify") ||
-                lower.startsWith("com.netflix") ||
-                lower.startsWith("com.amazon.") ||
-                lower.startsWith("com.linkedin") ||
-                lower.startsWith("org.mozilla.") ||
-                lower.startsWith("com.openai") ||
-                lower.startsWith("org.telegram.messenger") ||
-                lower.startsWith("com.slack") ||
-                lower.startsWith("com.zoom") ||
-                lower.startsWith("com.adobe.") ||
-                lower.startsWith("com.duolingo")
+        val trustedKeywords = listOf(
+            "google", "android", "microsoft", "chess", "physicswallah", "penpencil",
+            "pwlive", "pw.live", "whatsapp", "facebook", "instagram", "spotify",
+            "netflix", "amazon", "linkedin", "mozilla", "openai", "telegram",
+            "slack", "zoom", "adobe", "duolingo", "jio", "hotstar", "sony", "zee5",
+            "z5", "paytm", "phonepe", "flipkart", "myntra", "ubercab", "olacabs",
+            "zomato", "swiggy", "truecaller", "airtel", "bookmyshow"
+        )
+        return trustedKeywords.any { lower.contains(it) }
     }
 
     // Heuristics-based risk assessment scorer
