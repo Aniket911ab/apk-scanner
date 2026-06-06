@@ -1,0 +1,6 @@
+{
+  "name": "APK Security Scanner",
+  "description": "An APK security analysis tool that scans user applications and local APK files for malicious activities, risky permission combinations, and suspicious components, with an AI audit powered by Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
