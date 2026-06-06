@@ -253,18 +253,85 @@ class ScanRepository(private val scanLogDao: ScanLogDao) {
         }
     }
 
+    fun isTrustedDeveloper(packageName: String): Boolean {
+        val lower = packageName.lowercase()
+        return lower.startsWith("com.google.") ||
+                lower.startsWith("com.android.") ||
+                lower.startsWith("com.microsoft.") ||
+                lower.startsWith("com.chess") ||
+                lower.contains("physicswallah") ||
+                lower.startsWith("com.pw") ||
+                lower.startsWith("com.whatsapp") ||
+                lower.startsWith("com.facebook") ||
+                lower.startsWith("com.instagram") ||
+                lower.startsWith("com.spotify") ||
+                lower.startsWith("com.netflix") ||
+                lower.startsWith("com.amazon.") ||
+                lower.startsWith("com.linkedin") ||
+                lower.startsWith("org.mozilla.") ||
+                lower.startsWith("com.openai") ||
+                lower.startsWith("org.telegram.messenger") ||
+                lower.startsWith("com.slack") ||
+                lower.startsWith("com.zoom") ||
+                lower.startsWith("com.adobe.") ||
+                lower.startsWith("com.duolingo")
+    }
+
     // Heuristics-based risk assessment scorer
     fun calculateLocalRiskScore(details: ApkSecurityDetails): Pair<Int, String> {
-        var score = 10 // baseline
-        val dangerousCount = details.permissions.count { it.riskCategory == "HIGH" }
-        val mediumCount = details.permissions.count { it.riskCategory == "MEDIUM" }
+        if (details.isSystemApp) {
+            return 5 to "CLEAN" // System core apps are always safe
+        }
 
-        score += (dangerousCount * 12)
-        score += (mediumCount * 5)
+        val isTrusted = isTrustedDeveloper(details.packageName)
 
-        if (details.usesCleartextTraffic) score += 10
-        if (details.targetSdk < 30) score += 15
-        if (details.debuggable) score += 10
+        var score = 5 // lower realistic baseline (reduced from 10)
+
+        // Calculate specific permission weights based on actual threat surface
+        var permScore = 0.0
+        details.permissions.forEach { info ->
+            val pts = when (info.name) {
+                // Highly critical, malware-sensitive abuse vectors
+                "android.permission.BIND_ACCESSIBILITY_SERVICE" -> 25.0
+                "android.permission.SEND_SMS" -> 15.0
+                "android.permission.RECEIVE_SMS" -> 15.0
+                "android.permission.READ_SMS" -> 15.0
+                "android.permission.SYSTEM_ALERT_WINDOW" -> 15.0
+                "android.permission.REQUEST_INSTALL_PACKAGES" -> 12.0
+                "android.permission.WRITE_SECURE_SETTINGS" -> 15.0
+                "android.permission.CALL_PHONE" -> 8.0
+                "android.permission.READ_PHONE_STATE" -> 8.0
+                
+                // Contextual standard permissions matching regular app capabilities
+                "android.permission.RECORD_AUDIO" -> 4.0
+                "android.permission.CAMERA" -> 3.0
+                "android.permission.ACCESS_FINE_LOCATION" -> 3.0
+                "android.permission.ACCESS_COARSE_LOCATION" -> 1.0
+                "android.permission.WRITE_EXTERNAL_STORAGE" -> 2.0
+                "android.permission.READ_EXTERNAL_STORAGE" -> 2.0
+                "android.permission.RECEIVE_BOOT_COMPLETED" -> 3.0
+                
+                else -> {
+                    if (info.name.startsWith("android.permission")) {
+                        0.5 // Standard unmapped permission (avoids massive score accumulation)
+                    } else {
+                        0.0 // Non-system / app-specific custom permissions
+                    }
+                }
+            }
+            permScore += pts
+        }
+
+        score += permScore.toInt()
+
+        if (details.usesCleartextTraffic) score += 5
+        if (details.targetSdk < 28) score += 10 // target SDK extremely outdated
+        if (details.debuggable) {
+            // Debuggable flag is only an external hazard for third-party APK files
+            if (details.isLocalApk) {
+                score += 10
+            }
+        }
 
         // Spyware pattern check (Boot complete + Internet + SMS/Record Audio)
         val hasBoot = details.permissions.any { it.name == "android.permission.RECEIVE_BOOT_COMPLETED" }
@@ -273,13 +340,21 @@ class ScanRepository(private val scanLogDao: ScanLogDao) {
         val hasMic = details.permissions.any { it.name == "android.permission.RECORD_AUDIO" }
 
         if (hasBoot && hasInternet && (hasSms || hasMic)) {
-            score += 20 // heavy spy profile indicator
+            // Only add spyware pattern danger if they are NOT a trusted developer namespace
+            if (!isTrusted) {
+                score += 15
+            }
+        }
+
+        if (isTrusted) {
+            // Verified developer namespace automatically overrides high risk/suspicious limits
+            score = score.coerceIn(0, 18)
         }
 
         score = score.coerceIn(0, 100)
 
         val level = when {
-            score >= 65 -> "HIGH_RISK"
+            score >= 60 -> "HIGH_RISK"
             score >= 35 -> "SUSPICIOUS"
             else -> "CLEAN"
         }

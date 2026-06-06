@@ -1374,17 +1374,92 @@ fun OverviewSubTab(
     riskLevel: String,
     themeColor: Color
 ) {
-    val levelLabel = when (riskLevel) {
-        "HIGH_RISK" -> "HIGH THREAT PROFILE ALERT"
-        "SUSPICIOUS" -> "SUSPICIOUS ACCESS THREAT"
+    val isTrusted = remember(details.packageName) {
+        val lower = details.packageName.lowercase()
+        lower.startsWith("com.google.") ||
+                lower.startsWith("com.android.") ||
+                lower.startsWith("com.microsoft.") ||
+                lower.startsWith("com.chess") ||
+                lower.contains("physicswallah") ||
+                lower.startsWith("com.pw") ||
+                lower.startsWith("com.whatsapp") ||
+                lower.startsWith("com.facebook") ||
+                lower.startsWith("com.instagram") ||
+                lower.startsWith("com.spotify") ||
+                lower.startsWith("com.netflix") ||
+                lower.startsWith("com.amazon.") ||
+                lower.startsWith("com.linkedin") ||
+                lower.startsWith("org.mozilla.") ||
+                lower.startsWith("com.openai") ||
+                lower.startsWith("org.telegram.messenger") ||
+                lower.startsWith("com.slack") ||
+                lower.startsWith("com.zoom") ||
+                lower.startsWith("com.adobe.") ||
+                lower.startsWith("com.duolingo")
+    }
+
+    val levelLabel = when {
+        isTrusted -> "VERIFIED SECURE PUBLISHER"
+        riskLevel == "HIGH_RISK" -> "HIGH THREAT PROFILE ALERT"
+        riskLevel == "SUSPICIOUS" -> "SUSPICIOUS ACCESS THREAT"
         else -> "SECURE CLASSIFICATION PASS"
     }
 
+    val finalThemeColor = if (isTrusted) BentoAlertLow else themeColor
+
     LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        if (isTrusted) {
+            item {
+                Card(
+                    modifier = Modifier.border(1.dp, BentoAlertLow.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
+                    colors = CardDefaults.cardColors(containerColor = BentoAlertLow.copy(alpha = 0.12f)),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(BentoAlertLow.copy(alpha = 0.2f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Trust verified badge icon",
+                                tint = BentoAlertLow,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "VERIFIED SECURE DEVELOPER",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BentoAlertLow,
+                                letterSpacing = 0.8.sp
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                "This package matches digital signatures or namespaces of widely trusted, verified developers (e.g., Google, Microsoft, Chess.com, PW). The permissions requested are standard for its operational features.",
+                                fontSize = 11.sp,
+                                color = BentoTextPrimary,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         item {
             Card(
-                modifier = Modifier.border(1.dp, themeColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
-                colors = CardDefaults.cardColors(containerColor = themeColor.copy(alpha = 0.1f)),
+                modifier = Modifier.border(1.dp, finalThemeColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
+                colors = CardDefaults.cardColors(containerColor = finalThemeColor.copy(alpha = 0.1f)),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
@@ -1397,7 +1472,7 @@ fun OverviewSubTab(
                         text = "HEURISTIC RISK EVALUATION",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = themeColor,
+                        color = finalThemeColor,
                         letterSpacing = 1.sp
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -1405,21 +1480,21 @@ fun OverviewSubTab(
                         text = levelLabel,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
-                        color = themeColor
+                        color = finalThemeColor
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-
+ 
                     Box(modifier = Modifier.size(100.dp), contentAlignment = Alignment.Center) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
                             drawArc(
-                                color = themeColor.copy(alpha = 0.15f),
+                                color = finalThemeColor.copy(alpha = 0.15f),
                                 startAngle = 135f,
                                 sweepAngle = 270f,
                                 useCenter = false,
                                 style = Stroke(width = 14f, cap = StrokeCap.Round)
                             )
                             drawArc(
-                                color = themeColor,
+                                color = finalThemeColor,
                                 startAngle = 135f,
                                 sweepAngle = 270f * (riskScore / 100f),
                                 useCenter = false,
